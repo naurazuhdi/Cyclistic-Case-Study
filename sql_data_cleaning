@@ -1,0 +1,90 @@
+WITH combined_data AS (
+  SELECT * FROM `root-furnace-403708.tripdata.jan`
+  UNION ALL
+  SELECT * FROM `root-furnace-403708.tripdata.feb`
+  UNION ALL
+  SELECT * FROM `root-furnace-403708.tripdata.march`
+  UNION ALL
+  SELECT * FROM `root-furnace-403708.tripdata.apr`
+  UNION ALL
+  SELECT * FROM `root-furnace-403708.tripdata.may1`
+  UNION ALL
+  SELECT * FROM `root-furnace-403708.tripdata.may2`
+  UNION ALL
+  SELECT * FROM `root-furnace-403708.tripdata.juni1`
+  UNION ALL
+  SELECT * FROM `root-furnace-403708.tripdata.juni2`
+),
+
+-- I delete data with ride_length < 1, lat-long = null, clean-up the station name,
+cleaned AS (
+  SELECT *,
+    TRIM(combined_data.start_station_name) AS trimmed_start_station_name,
+    TRIM(combined_data.end_station_name) AS trimmed_end_station_name
+  FROM combined_data
+  WHERE TIMESTAMP_DIFF(ended_at, started_at, MINUTE) >= 1 AND
+    combined_data.start_lat IS NOT NULL AND
+    combined_data.start_lng IS NOT NULL AND
+    combined_data.end_lat IS NOT NULL AND
+    combined_data.end_lng IS NOT NULL
+    
+),
+
+filtered_data AS
+(
+   SELECT ride_id,
+      rideable_type,
+      started_at,
+      ended_at,
+      trimmed_start_station_name,
+      trimmed_end_station_name,
+      start_lat,
+      start_lng,
+      end_lat,
+      end_lng,
+      member_casual AS member_type,
+      TIMESTAMP_DIFF(ended_at, started_at, MINUTE) AS ride_length,
+      EXTRACT(DAY FROM started_at) as day,
+      CASE
+         WHEN EXTRACT(DAYOFWEEK FROM started_at) = 1 THEN 'Sun'
+         WHEN EXTRACT(DAYOFWEEK FROM started_at) = 2 THEN 'Mon'
+         WHEN EXTRACT(DAYOFWEEK FROM started_at) = 3 THEN 'Tues'
+         WHEN EXTRACT(DAYOFWEEK FROM started_at) = 4 THEN 'Wed'
+         WHEN EXTRACT(DAYOFWEEK FROM started_at) = 5 THEN 'Thur'
+         WHEN EXTRACT(DAYOFWEEK FROM started_at) = 6 THEN 'Fri'
+         ELSE'Sat' 
+      END AS day_of_week,
+      CASE
+         WHEN EXTRACT(MONTH FROM started_at) = 1 THEN 'Jan'
+         WHEN EXTRACT(MONTH FROM started_at) = 2 THEN 'Feb'
+         WHEN EXTRACT(MONTH FROM started_at) = 3 THEN 'Mar'
+         WHEN EXTRACT(MONTH FROM started_at) = 4 THEN 'Apr'
+         WHEN EXTRACT(MONTH FROM started_at) = 5 THEN 'May'
+         WHEN EXTRACT(MONTH FROM started_at) = 6 THEN 'Jun'
+         WHEN EXTRACT(MONTH FROM started_at) = 7 THEN 'July'
+         WHEN EXTRACT(MONTH FROM started_at) = 8 THEN 'Aug'
+         WHEN EXTRACT(MONTH FROM started_at) = 9 THEN 'Sept'
+         WHEN EXTRACT(MONTH FROM started_at) = 10 THEN 'Oct'
+         WHEN EXTRACT(MONTH FROM started_at) = 11 THEN 'Nov'
+         ELSE 'Dec'
+      END AS month,
+      EXTRACT(YEAR FROM started_at) AS year,
+      EXTRACT(HOUR FROM started_at) AS start_hour
+   FROM cleaned 
+),
+
+-- Analyze data
+duration_analysis AS
+(
+   SELECT member_type,
+   AVG(filtered_data.ride_length) as ride_length_avg,
+   MIN(filtered_data.ride_length) as ride_length_min,
+   MAX(filtered_data.ride_length) as ride_length_max
+   FROM filtered_data
+   GROUP BY member_type
+)
+
+SELECT
+*
+FROM
+  duration_analysis;
