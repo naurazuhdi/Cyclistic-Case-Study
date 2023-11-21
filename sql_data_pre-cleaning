@@ -1,0 +1,45 @@
+--#1 I Combine 6 months data into a single dataset as first_half_2023 table
+CREATE TABLE root-furnace-403708.tripdata.first_half_2023 AS
+SELECT * FROM `root-furnace-403708.tripdata.jan`
+UNION ALL
+SELECT * FROM `root-furnace-403708.tripdata.feb`
+UNION ALL
+SELECT * FROM `root-furnace-403708.tripdata.march`
+UNION ALL
+SELECT * FROM `root-furnace-403708.tripdata.apr`
+UNION ALL
+SELECT * FROM `root-furnace-403708.tripdata.may1`
+UNION ALL
+SELECT * FROM `root-furnace-403708.tripdata.may2`
+UNION ALL
+SELECT * FROM `root-furnace-403708.tripdata.juni1`
+UNION ALL
+SELECT * FROM `root-furnace-403708.tripdata.juni2`
+
+--#2 I checked data from the ride_id to validate if there are any duplicate data or not. which the result shows no duplicate data
+SELECT COUNT (DISTINCT ride_id) AS ride_total
+FROM root-furnace-403708.tripdata.first_half_2023
+
+--#3 I checked rideable_type to validate data. The results shows only 3 type data 
+SELECT DISTINCT rideable_type
+FROM root-furnace-403708.tripdata.first_half_2023
+
+--#4 I Count data with ride_length less than a minute
+SELECT COUNT(*) AS less_than_a_minute
+FROM root-furnace-403708.tripdata.first_half_2023
+WHERE TIMESTAMP_DIFF(ended_at, started_at, MINUTE) < 1
+
+--#5 Checked the null data for the station distribution
+SELECT COUNT(CASE WHEN start_station_name IS NULL THEN 1 END) AS start_null,
+   COUNT(CASE WHEN end_station_name IS NULL THEN 1 END) AS end_null,
+   COUNT(CASE WHEN start_station_id IS NULL THEN 1 END) AS startid_null,
+   COUNT(CASE WHEN end_station_id IS NULL THEN 1 END) AS endid_null,
+   COUNT(CASE WHEN start_lat IS NULL THEN 1 END) AS startlat_null,
+   COUNT(CASE WHEN end_lat IS NULL THEN 1 END) AS endlat_null,
+   COUNT(CASE WHEN start_lng IS NULL THEN 1 END) AS startlng_null,
+   COUNT(CASE WHEN end_lng IS NULL THEN 1 END) AS endlng_null,
+FROM root-furnace-403708.tripdata.first_half_2023
+
+--#6 Checked the types of riders
+SELECT DISTINCT member_casual
+FROM root-furnace-403708.tripdata.first_half_2023
